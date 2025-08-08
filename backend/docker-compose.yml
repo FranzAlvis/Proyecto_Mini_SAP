@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
+    image: postgres:13
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -12,17 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  app:
-    build: .
-    restart: always
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/minisap
-      NODE_ENV: development
-    depends_on:
-      - db
 
 volumes:
   postgres_data:

@@ -1,9 +1,9 @@
 require('dotenv').config();
-const express = require('../backend/node_modules/express');
+const express = require('express');
 const cors = require('cors');
-const cookieParser = require('../backend/node_modules/cookie-parser');
-const bcrypt = require('../backend/node_modules/bcryptjs');
-const jwt = require('../backend/node_modules/jsonwebtoken');
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -50,9 +50,18 @@ const auth = async (req, res, next) => {
   }
 };
 
+// Middleware to check for Admin role
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'ADMIN') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador.' });
+  }
+};
+
 // Configuración de CORS
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: 'http://localhost:5173', // El puerto por defecto de Vite
   credentials: true,
   optionsSuccessStatus: 200 // Algunos navegadores antiguos (IE11, varios SmartTVs) tienen problemas con 204
 };
@@ -60,7 +69,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static('public'));
+
 
 // Rutas de autenticación
 app.post('/api/register', async (req, res) => {
@@ -149,6 +158,86 @@ app.get('/api/check-auth', auth, (req, res) => {
   });
 });
 
+app.post('/api/logout', auth, async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    
+    await prisma.session.deleteMany({
+      where: {
+        token: token,
+      },
+    });
+
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+
+    res.status(200).json({ success: true, message: 'Sesión cerrada exitosamente' });
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    res.status(500).json({ error: 'Error en el servidor al cerrar sesión' });
+  }
+});
+
+// Ruta para estadísticas del Dashboard
+app.get('/api/dashboard/stats', auth, async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+
+    const totalProducts = await prisma.product.count();
+
+    const expiringSoon = await prisma.product.count({
+      where: {
+        expirationDate: {
+          gte: today,
+          lt: nextWeek
+        }
+      }
+    });
+
+    const todayEntries = await prisma.product.count({
+      where: {
+        createdAt: {
+          gte: today
+        }
+      }
+    });
+
+    const lowStock = await prisma.product.count({
+      where: {
+        quantity: {
+          lt: 10 // Define "low stock" as less than 10
+        }
+      }
+    });
+
+    const inventoryValue = await prisma.product.aggregate({
+      _sum: {
+        cost: true,
+      },
+    });
+
+    res.json({
+      totalProducts,
+      expiringSoon,
+      todayEntries,
+      totalValue: inventoryValue._sum.cost || 0,
+      lowStock
+    });
+
+  } catch (error) {
+    console.error('Error al obtener estadísticas del dashboard:', error);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+});
+
 // Rutas de Productos
 app.get('/api/products', auth, async (req, res) => {
   try {
@@ -205,78 +294,56 @@ app.post('/api/products', auth, async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', auth, async (req, res) => {
+app.put('/api/products/:id', auth, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, category, expirationDate, quantity, cost, lot } = req.body;
-    
-    // Verificar si el producto existe y pertenece al usuario (o es admin)
-    const existingProduct = await prisma.product.findUnique({
-      where: { id }
-    });
-    
-    if (!existingProduct) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
-    }
-    
-    // Solo el admin puede modificar cualquier producto
-    if (req.user.role !== 'ADMIN' && existingProduct.registeredById !== req.user.id) {
-      return res.status(403).json({ error: 'No tienes permiso para modificar este producto' });
-    }
-    
+
     const updatedProduct = await prisma.product.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         name,
         category,
         expirationDate: new Date(expirationDate),
         quantity: parseInt(quantity),
         cost: parseFloat(cost),
-        lot
+        lot,
       },
       include: {
         registeredBy: {
           select: {
             id: true,
             name: true,
-            username: true
-          }
-        }
-      }
+            username: true,
+          },
+        },
+      },
     });
-    
+
     res.json(updatedProduct);
   } catch (error) {
     console.error('Error al actualizar producto:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
     res.status(400).json({ error: 'Error al actualizar el producto' });
   }
 });
 
-app.delete('/api/products/:id', auth, async (req, res) => {
+app.delete('/api/products/:id', auth, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Verificar si el producto existe
-    const existingProduct = await prisma.product.findUnique({
-      where: { id }
-    });
-    
-    if (!existingProduct) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
-    }
-    
-    // Solo el admin puede eliminar cualquier producto
-    if (req.user.role !== 'ADMIN' && existingProduct.registeredById !== req.user.id) {
-      return res.status(403).json({ error: 'No tienes permiso para eliminar este producto' });
-    }
-    
+
     await prisma.product.delete({
-      where: { id }
+      where: { id: parseInt(id) },
     });
-    
+
     res.json({ success: true, message: 'Producto eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar producto:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
     res.status(400).json({ error: 'Error al eliminar el producto' });
   }
 });
@@ -369,7 +436,55 @@ app.get('/api/products', auth, async (req, res) => {
     });
     res.json(products);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al obtener los productos' });
+  }
+});
+
+// Update a product
+app.put('/api/products/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  const { name, category, quantity, expirationDate, cost } = req.body;
+
+  try {
+    const product = await prisma.product.findUnique({ where: { id: parseInt(id) } });
+    if (!product) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        category,
+        quantity,
+        expirationDate: new Date(expirationDate),
+        cost,
+      },
+    });
+    res.json(updatedProduct);
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ error: 'Error al actualizar el producto' });
+  }
+});
+
+// Delete a product
+app.delete('/api/products/:id', auth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const product = await prisma.product.findUnique({ where: { id: parseInt(id) } });
+    if (!product) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    await prisma.product.delete({
+      where: { id: parseInt(id) },
+    });
+    res.status(204).send(); // No content
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ error: 'Error al eliminar el producto' });
   }
 });
 

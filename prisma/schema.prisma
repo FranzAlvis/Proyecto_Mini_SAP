@@ -7,14 +7,21 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String   @id @default(cuid())
+  username      String   @unique
   password      String
-  name          String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  name          String
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   sessions      Session[]
+  products      Product[]
 }
 
 model Session {
@@ -24,4 +31,18 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  category      String
+  expirationDate DateTime
+  quantity      Int
+  cost          Float
+  lot           String
+  registeredBy  User     @relation(fields: [registeredById], references: [id])
+  registeredById String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

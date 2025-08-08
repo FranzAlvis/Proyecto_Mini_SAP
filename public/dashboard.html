@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini SAP - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        warning: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+        <div class="p-4">
+            <h1 class="text-2xl font-bold text-primary">Mini SAP</h1>
+            <div class="mt-8 space-y-1">
+                <a href="#" class="px-4 py-3 text-gray-700 hover:bg-gray-100 block rounded-lg active:bg-gray-100" data-module="dashboard">
+                    <span class="mr-2">📊</span> Dashboard
+                </a>
+                <a href="#" class="px-4 py-3 text-gray-700 hover:bg-gray-100 block rounded-lg" data-module="products">
+                    <span class="mr-2">📦</span> Entrada Proveedor
+                </a>
+                <a href="#" class="px-4 py-3 text-gray-700 hover:bg-gray-100 block rounded-lg" data-module="warehouse">
+                    <span class="mr-2">📦</span> Almacén
+                </a>
+                <a href="#" class="px-4 py-3 text-gray-700 hover:bg-gray-100 block rounded-lg" data-module="sales">
+                    <span class="mr-2">📦</span> Salida Producto
+                </a>
+                <a href="#" class="px-4 py-3 text-gray-700 hover:bg-gray-100 block rounded-lg" data-module="accounting">
+                    <span class="mr-2">📊</span> Contabilidad
+                </a>
+            </div>
+            <button class="mt-8 w-full px-4 py-3 text-gray-700 hover:bg-gray-100 block rounded-lg" onclick="logout()">
+                <span class="mr-2">🚪</span> Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 p-8">
+        <div id="dashboard" class="module active">
+            <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Cards de estadísticas -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Productos Totales</h3>
+                    <p class="text-3xl font-bold text-primary">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Productos por Vencer</h3>
+                    <p class="text-3xl font-bold text-warning">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Entradas Hoy</h3>
+                    <p class="text-3xl font-bold text-primary">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-2">Salidas Hoy</h3>
+                    <p class="text-3xl font-bold text-primary">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Módulo de Productos -->
+        <div id="products" class="module hidden">
+            <h2 class="text-2xl font-bold mb-6">Entrada de Productos</h2>
+            <form id="productForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <input type="text" name="name" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <input type="text" name="category" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Vencimiento</label>
+                    <input type="date" name="expirationDate" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                    <input type="number" name="quantity" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
+                    <input type="number" name="cost" step="0.01" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lote</label>
+                    <input type="text" name="lot" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-50">
+                </div>
+                <button type="submit" class="w-full py-3 rounded-lg bg-primary text-white font-semibold hover:bg-secondary transition-colors duration-200">
+                    Registrar Producto
+                </button>
+            </form>
+        </div>
+
+        <!-- Módulo de Almacén -->
+        <div id="warehouse" class="module hidden">
+            <h2 class="text-2xl font-bold mb-6">Almacén</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-4 py-3">Nombre</th>
+                            <th class="px-4 py-3">Categoría</th>
+                            <th class="px-4 py-3">Cantidad</th>
+                            <th class="px-4 py-3">Vencimiento</th>
+                            <th class="px-4 py-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehouseTable">
+                        <!-- Los productos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Función para verificar el token y el rol
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/index.html';
+            }
+        }
+
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        }
+
+        // Manejar la navegación entre módulos
+        document.querySelectorAll('[data-module]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const module = e.target.dataset.module;
+                document.querySelectorAll('.module').forEach(m => m.classList.add('hidden'));
+                document.getElementById(module).classList.remove('hidden');
+            });
+        });
+
+        // Verificar autenticación al cargar
+        checkAuth();
+    </script>
+</body>
+</html>

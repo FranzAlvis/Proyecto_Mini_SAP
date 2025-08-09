@@ -528,6 +528,69 @@ app.delete('/api/products/:id', auth, async (req, res) => {
   }
 });
 
+// Endpoint for product output (sales)
+app.post('/api/products/output', auth, async (req, res) => {
+  try {
+    const { productId, quantity, sellingPrice, total, lot, productName } = req.body;
+
+    if (!productId || !quantity || quantity <= 0) {
+      return res.status(400).json({ error: 'Datos de salida inválidos.' });
+    }
+
+    // Use a transaction to ensure all database operations succeed or fail together
+    const result = await prisma.$transaction(async (prisma) => {
+      const product = await prisma.product.findUnique({ where: { id: productId } });
+
+      if (!product) {
+        throw new Error('Producto no encontrado.');
+      }
+
+      if (product.quantity < quantity) {
+        throw new Error('Stock insuficiente.');
+      }
+
+      // 1. Update product quantity
+      const updatedProduct = await prisma.product.update({
+        where: { id: productId },
+        data: { quantity: { decrement: quantity } },
+      });
+
+      // 2. Create a transaction record
+      const newTransaction = await prisma.transaction.create({
+        data: {
+          productId,
+          productName,
+          lot,
+          quantity,
+          price: sellingPrice,
+          total,
+          type: 'SALE',
+          userId: req.user.id,
+        },
+      });
+
+      return { updatedProduct, newTransaction };
+    });
+
+    res.json({ 
+      message: 'Salida registrada y stock actualizado con éxito.',
+      product: result.updatedProduct,
+      transaction: result.newTransaction
+    });
+
+  } catch (error) {
+    console.error('Error en la salida de producto:', error);
+    // Check for specific errors thrown inside the transaction
+    if (error.message === 'Producto no encontrado.') {
+        return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'Stock insuficiente.') {
+        return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Error en el servidor al procesar la salida.' });
+  }
+});
+
 app.listen(3000, () => {
   console.log('Servidor corriendo en el puerto 3000');
 });

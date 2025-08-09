@@ -5,6 +5,7 @@
     <Sidebar 
       :active-module="activeModule" 
       :user-name="user.name"
+      :user-role="user.role"
       @set-active-module="activeModule = $event"
       @logout="logout"
     />
@@ -14,7 +15,7 @@
       <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="mb-8">
-          <h2 class="text-3xl font-bold text-slate-800 capitalize">{{ activeModule === 'products' ? 'Entrada Proveedor' : activeModule }}</h2>
+          <h2 class="text-3xl font-bold text-slate-800">{{ moduleTitle }}</h2>
           <p class="text-slate-500">Bienvenido de nuevo, {{ user.name }}</p>
         </div>
 
@@ -38,13 +39,29 @@
           @update-product="handleProductUpdate"
           @delete-product="handleProductDelete"
         />
+
+        <ProductOutput 
+          v-if="activeModule === 'product-output'"
+          :products="products"
+          @product-output-submitted="handleProductOutputSubmit"
+        />
+
+        <Accounting 
+          v-if="activeModule === 'accounting'"
+          :transactions="transactions"
+        />
+
+        <UserManagement 
+          v-if="activeModule === 'users'"
+          @create-user="handleCreateUser"
+        />
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, reactive } from 'vue';
+import { ref, onMounted, watch, reactive, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
@@ -52,13 +69,29 @@ import Sidebar from '@/components/dashboard/Sidebar.vue';
 import DashboardHome from '@/components/dashboard/DashboardHome.vue';
 import ProductEntry from '@/components/dashboard/ProductEntry.vue';
 import WarehouseList from '@/components/dashboard/WarehouseList.vue';
+import ProductOutput from '@/components/dashboard/ProductOutput.vue';
+import Accounting from '@/components/dashboard/Accounting.vue';
+import UserManagement from '@/components/dashboard/UserManagement.vue';
 import NotificationToast from '@/components/dashboard/NotificationToast.vue';
 
 const router = useRouter();
 const user = ref({ name: 'Usuario' });
 const activeModule = ref('dashboard'); // dashboard, products, warehouse
 const products = ref([]);
+const transactions = ref([]);
 const notification = ref({ show: false, message: '', type: 'success' });
+
+const moduleTitle = computed(() => {
+  switch(activeModule.value) {
+    case 'dashboard': return 'Dashboard';
+    case 'products': return 'Entrada Proveedor';
+    case 'product-output': return 'Salida de Producto';
+    case 'warehouse': return 'Almacén';
+    case 'accounting': return 'Contabilidad';
+    case 'users': return 'Gestión de Usuarios';
+    default: return 'Dashboard';
+  }
+});
 
 const dashboardStats = reactive({
   totalProducts: 0,
@@ -80,6 +113,8 @@ const checkAuth = async () => {
     });
     if (response.data.authenticated) {
       user.value = response.data.user;
+      // TEMPORARY: Assign admin role for development purposes
+      user.value.role = 'admin';
     } else {
       router.push('/login');
     }
@@ -140,6 +175,37 @@ const handleProductSubmit = async (productData) => {
   }
 };
 
+const handleProductOutputSubmit = async (outputData) => {
+  try {
+    // Call the new backend endpoint
+    await axios.post('http://localhost:3000/api/products/output', outputData, {
+      withCredentials: true
+    });
+
+    showNotification('Salida de producto registrada con éxito');
+    
+    // Refresh data from the server
+    fetchProducts();
+    fetchDashboardStats();
+
+    // Optional: Add transaction to local list for immediate UI update in accounting
+    const newTransaction = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      ...outputData
+    };
+    transactions.value.unshift(newTransaction);
+
+    // Switch to warehouse view to see the updated stock
+    activeModule.value = 'warehouse';
+
+  } catch (error) {
+    console.error('Error registering product output:', error);
+    const errorMessage = error.response?.data?.error || 'Error al registrar la salida del producto';
+    showNotification(errorMessage, 'error');
+  }
+};
+
 const handleProductUpdate = async (productData) => {
   try {
     await axios.put(`http://localhost:3000/api/products/${productData.id}`, productData, {
@@ -166,13 +232,30 @@ const handleProductDelete = async (productId) => {
   }
 };
 
+const handleCreateUser = async (userData) => {
+  try {
+    // NOTE: In a real app, this would be an API call to a secure endpoint.
+    // For demonstration, we'll just log the data and show a success message.
+    console.log('Creating user:', userData);
+    // await axios.post('http://localhost:3000/api/users', userData, {
+    //     withCredentials: true
+    // });
+    showNotification(`Usuario '${userData.username}' creado con éxito`);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    const errorMessage = error.response?.data?.message || 'Error al crear el usuario';
+    showNotification(errorMessage, 'error');
+  }
+};
+
 onMounted(() => {
   checkAuth();
   fetchDashboardStats();
 });
 
 watch(activeModule, (newModule) => {
-  if (newModule === 'warehouse') {
+  // Fetch products only if the list is empty, to avoid overwriting local changes
+  if ((newModule === 'warehouse' || newModule === 'product-output') && products.value.length === 0) {
     fetchProducts();
   }
 });

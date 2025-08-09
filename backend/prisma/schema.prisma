@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  username  String    @unique
-  password  String
-  name      String
-  role      Role      @default(USER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
-  sessions  Session[]
+  id           String        @id @default(cuid())
+  username     String        @unique
+  password     String
+  name         String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  products     Product[]
+  sessions     Session[]
+  transactions Transaction[]
 }
 
 model Session {
@@ -29,7 +30,7 @@ model Session {
 }
 
 model Product {
-  id             String   @id @default(cuid())
+  id             String        @id @default(cuid())
   name           String
   category       String
   expirationDate DateTime
@@ -37,9 +38,26 @@ model Product {
   cost           Float
   lot            String
   registeredById String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  registeredBy   User     @relation(fields: [registeredById], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  registeredBy   User          @relation(fields: [registeredById], references: [id])
+  transactions   Transaction[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  productId   String
+  productName String
+  lot         String
+  quantity    Int
+  price       Float
+  total       Float
+  type        String // e.g., 'SALE', 'ENTRY', 'ADJUSTMENT'
+  userId      String
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
 }
 
 enum Role {

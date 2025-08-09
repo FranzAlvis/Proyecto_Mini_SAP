@@ -73,6 +73,23 @@
 
       <a 
         href="#" 
+        @click.prevent="$emit('set-active-module', 'product-output')" 
+        :class="[
+          'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+          activeModule === 'product-output' 
+            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25' 
+            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+        ]"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H3"></path>
+        </svg>
+        <span class="font-medium">Salida de Producto</span>
+        <div class="ml-auto w-1.5 h-1.5 bg-current rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </a>
+
+      <a 
+        href="#" 
         @click.prevent="$emit('set-active-module', 'warehouse')" 
         :class="[
           'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group',
@@ -85,6 +102,42 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
         <span class="font-medium">Almacén</span>
+        <div class="ml-auto w-1.5 h-1.5 bg-current rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </a>
+
+      <a 
+        href="#" 
+        @click.prevent="$emit('set-active-module', 'accounting')" 
+        :class="[
+          'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+          activeModule === 'accounting' 
+            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25' 
+            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+        ]"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6m-5 4h.01M4 16h16M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="font-medium">Contabilidad</span>
+        <div class="ml-auto w-1.5 h-1.5 bg-current rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      </a>
+
+      <!-- Admin Only: User Management -->
+      <a 
+        v-if="userRole === 'admin'"
+        href="#" 
+        @click.prevent="$emit('set-active-module', 'users')" 
+        :class="[
+          'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+          activeModule === 'users' 
+            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
+            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+        ]"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m13.292-8.152a4 4 0 11-5.292 0M18 21a6 6 0 00-9-5.197"></path>
+        </svg>
+        <span class="font-medium">Usuarios</span>
         <div class="ml-auto w-1.5 h-1.5 bg-current rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
       </a>
     </nav>
@@ -113,6 +166,10 @@ defineProps({
   userName: {
     type: String,
     default: 'Usuario'
+  },
+  userRole: {
+    type: String,
+    default: 'user'
   }
 });
 

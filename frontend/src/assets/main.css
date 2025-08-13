@@ -1,2 +1,148 @@
 @import "tailwindcss";
 
+/* Global CSS Variables for Dark Mode */
+:root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+}
+
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #374151;
+}
+
+/* Comprehensive Dark Mode Styles for Dashboard */
+
+/* Background Colors */
+.dark .bg-white { background-color: #1e293b !important; }
+.dark .bg-slate-50 { background-color: #0f172a !important; }
+.dark .bg-slate-100 { background-color: #1e293b !important; }
+.dark .bg-gray-50 { background-color: #0f172a !important; }
+.dark .bg-gray-100 { background-color: #1e293b !important; }
+.dark .bg-gray-200 { background-color: #374151 !important; }
+.dark .bg-gray-800 { background-color: #1e293b !important; }
+.dark .bg-gray-900 { background-color: #0f172a !important; }
+
+/* Text Colors */
+.dark .text-slate-800 { color: #f1f5f9 !important; }
+.dark .text-slate-700 { color: #e2e8f0 !important; }
+.dark .text-slate-600 { color: #cbd5e1 !important; }
+.dark .text-gray-700 { color: #e2e8f0 !important; }
+.dark .text-gray-600 { color: #cbd5e1 !important; }
+.dark .text-gray-500 { color: #94a3b8 !important; }
+.dark .text-gray-400 { color: #64748b !important; }
+.dark .text-gray-300 { color: #cbd5e1 !important; }
+.dark .text-gray-100 { color: #f1f5f9 !important; }
+
+/* Border Colors */
+.dark .border-slate-200 { border-color: #374151 !important; }
+.dark .border-slate-300 { border-color: #4b5563 !important; }
+.dark .border-gray-200 { border-color: #374151 !important; }
+.dark .border-gray-300 { border-color: #4b5563 !important; }
+.dark .border-gray-700 { border-color: #374151 !important; }
+
+/* Hover States */
+.dark .hover\:bg-gray-50:hover { background-color: #374151 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #4b5563 !important; }
+.dark .hover\:bg-slate-50:hover { background-color: #374151 !important; }
+.dark .hover\:text-gray-700:hover { color: #f1f5f9 !important; }
+.dark .hover\:text-gray-900:hover { color: #f1f5f9 !important; }
+
+/* Form Elements */
+.dark input { 
+  background-color: #1e293b !important; 
+  color: #f1f5f9 !important; 
+  border-color: #374151 !important; 
+}
+.dark select { 
+  background-color: #1e293b !important; 
+  color: #f1f5f9 !important; 
+  border-color: #374151 !important; 
+}
+.dark textarea { 
+  background-color: #1e293b !important; 
+  color: #f1f5f9 !important; 
+  border-color: #374151 !important; 
+}
+
+/* Buttons */
+.dark button { 
+  border-color: #374151 !important; 
+}
+.dark .bg-blue-500 { background-color: #3b82f6 !important; }
+.dark .bg-green-500 { background-color: #10b981 !important; }
+.dark .bg-red-500 { background-color: #ef4444 !important; }
+
+/* Cards and Containers */
+.dark .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important; }
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important; }
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important; }
+.dark .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3) !important; }
+
+/* Sidebar Specific */
+.dark aside {
+  background-color: #1e293b !important;
+  border-color: #374151 !important;
+}
+
+/* Tables */
+.dark table { background-color: #1e293b !important; }
+.dark th { background-color: #374151 !important; color: #f1f5f9 !important; }
+.dark td { border-color: #374151 !important; color: #e2e8f0 !important; }
+.dark tr:nth-child(even) { background-color: #0f172a !important; }
+
+/* Mobile Sidebar Fixes */
+@media (max-width: 1023px) {
+  /* Ensure sidebar is properly positioned on mobile */
+  aside {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: 288px !important; /* w-72 = 288px */
+    z-index: 50 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease-in-out !important;
+  }
+  
+  /* Show sidebar when it has translate-x-0 class */
+  aside.translate-x-0 {
+    transform: translateX(0) !important;
+  }
+  
+  /* Hide sidebar when it has -translate-x-full class */
+  aside.-translate-x-full {
+    transform: translateX(-100%) !important;
+  }
+}
+
+/* Desktop Sidebar */
+@media (min-width: 1024px) {
+  aside {
+    transform: translateX(0) !important;
+  }
+}
+
+/* Mobile Menu Button Fixes */
+@media (max-width: 1023px) {
+  .mobile-menu-btn {
+    display: block !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 60 !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-menu-btn {
+    display: none !important;
+  }
+}
+

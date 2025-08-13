@@ -1,38 +1,48 @@
 <template>
-  <aside class="fixed inset-y-0 left-0 w-72 bg-white shadow-xl border-r border-slate-200 z-50">
+  <aside :class="sidebarClasses">
+    <!-- Close button for mobile -->
+    <button 
+      @click="$emit('close')"
+      class="lg:hidden absolute top-4 right-4 p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+
     <!-- Header -->
-    <div class="p-6 border-b border-slate-200">
-      <div class="flex items-center space-x-3 mb-6">
-        <div class="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+    <div class="p-4 lg:p-6 border-b border-slate-200 dark:border-gray-700">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+          <span class="text-white font-bold text-sm lg:text-lg">S</span>
         </div>
         <div>
-          <h1 class="text-xl font-bold text-slate-800">Mini SAP</h1>
-          <p class="text-xs text-slate-500">Sistema de Gestión</p>
+          <h1 class="text-lg lg:text-xl font-bold text-slate-800 dark:text-gray-100">Mini SAP</h1>
+          <p class="text-xs lg:text-sm text-slate-500 dark:text-gray-400">Sistema de Gestión</p>
         </div>
       </div>
-      
-      <!-- User Info -->
-      <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl">
+    </div>
+
+    <!-- User Info -->
+    <div class="p-4 lg:p-6">
+      <div class="flex items-center space-x-3 p-3 bg-slate-50 dark:bg-gray-700 rounded-xl">
         <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
           <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
           </svg>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-slate-800 truncate">{{ userName }}</p>
-          <p class="text-xs text-slate-500">En línea</p>
+          <p class="text-sm font-medium text-slate-800 dark:text-gray-100 truncate">{{ userName }}</p>
+          <p class="text-xs text-slate-500 dark:text-gray-400">{{ userRole === 'ADMIN' ? 'Administrador' : 'Usuario' }}</p>
         </div>
         <div class="w-2 h-2 bg-green-400 rounded-full"></div>
       </div>
     </div>
 
     <!-- Navigation -->
-    <nav class="p-6 space-y-2">
+    <nav class="p-4 lg:p-6 space-y-1 lg:space-y-2 flex-1 overflow-y-auto">
       <div class="mb-4">
-        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">MENÚ PRINCIPAL</span>
+        <span class="text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">MENÚ PRINCIPAL</span>
       </div>
       
       <a 
@@ -158,7 +168,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
   activeModule: {
     type: String,
     required: true
@@ -170,8 +182,25 @@ defineProps({
   userRole: {
     type: String,
     default: 'user'
+  },
+  isOpen: {
+    type: Boolean,
+    default: false
   }
 });
 
-defineEmits(['set-active-module', 'logout']);
+defineEmits(['set-active-module', 'logout', 'close']);
+
+const sidebarClasses = computed(() => {
+  const baseClasses = 'fixed left-0 top-0 h-full w-72 border-r shadow-xl transition-all duration-300 z-[50] overflow-y-auto';
+  const colorClasses = 'bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700';
+  
+  // Mobile: show/hide based on isOpen prop
+  // Desktop (lg+): always visible
+  const positionClasses = props.isOpen 
+    ? 'translate-x-0' 
+    : '-translate-x-full lg:translate-x-0';
+  
+  return `${baseClasses} ${colorClasses} ${positionClasses}`;
+});
 </script>

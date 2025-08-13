@@ -1,22 +1,64 @@
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-800">
-    <NotificationToast :notification="notification" />
+  <div class="min-h-screen bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-gray-100 transition-colors duration-200">
+    <NotificationToast 
+      :notification="notification" 
+      @close="notification.show = false"
+    />
+
+    <!-- Mobile Menu Button -->
+    <div class="mobile-menu-btn">
+      <button
+        @click="toggleSidebar"
+        class="flex items-center justify-center p-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 min-w-[48px] min-h-[48px]"
+        aria-label="Toggle menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path v-if="!sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Theme Toggle Button -->
+    <div class="fixed top-4 right-4 z-[60]">
+      <button
+        @click="toggleTheme"
+        class="flex items-center justify-center p-3 rounded-xl bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 min-w-[48px] min-h-[48px]"
+        :aria-label="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      >
+        <svg v-if="isDarkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div 
+      v-if="sidebarOpen" 
+      class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[45]"
+      @click="sidebarOpen = false"
+    ></div>
 
     <Sidebar 
       :active-module="activeModule" 
       :user-name="user.name"
       :user-role="user.role"
-      @set-active-module="activeModule = $event"
+      :is-open="sidebarOpen"
+      @set-active-module="handleModuleChange"
       @logout="logout"
+      @close="sidebarOpen = false"
     />
 
     <!-- Main Content -->
-    <main class="ml-72 p-8">
-      <div class="max-w-7xl mx-auto">
+    <div class="lg:ml-72 min-h-screen bg-slate-50 dark:bg-gray-900 transition-all duration-300">
+      <div class="p-6 max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="mb-8">
-          <h2 class="text-3xl font-bold text-slate-800">{{ moduleTitle }}</h2>
-          <p class="text-slate-500">Bienvenido de nuevo, {{ user.name }}</p>
+        <div class="mb-6 lg:mb-8">
+          <h2 class="text-2xl lg:text-3xl font-bold text-slate-800 dark:text-gray-100">{{ moduleTitle }}</h2>
+          <p class="text-slate-500 dark:text-gray-400 text-sm lg:text-base">Bienvenido de nuevo, {{ user.name }}</p>
         </div>
 
         <!-- Dynamic Content -->
@@ -44,6 +86,7 @@
           v-if="activeModule === 'product-output'"
           :products="products"
           @product-output-submitted="handleProductOutputSubmit"
+          @show-notification="(message, type, title) => showNotification(message, type, title)"
         />
 
         <Accounting 
@@ -54,9 +97,10 @@
         <UserManagement 
           v-if="activeModule === 'users'"
           @create-user="handleCreateUser"
+          @show-notification="(message, type, title) => showNotification(message, type, title)"
         />
       </div>
-    </main>
+    </div>
   </div>
 </template>
 
@@ -80,6 +124,8 @@ const activeModule = ref('dashboard'); // dashboard, products, warehouse
 const products = ref([]);
 const transactions = ref([]);
 const notification = ref({ show: false, message: '', type: 'success' });
+const sidebarOpen = ref(false);
+const isDarkMode = ref(false);
 
 const moduleTitle = computed(() => {
   switch(activeModule.value) {
@@ -99,11 +145,108 @@ const dashboardStats = reactive({
   todayEntries: 0
 });
 
-const showNotification = (message, type = 'success') => {
-  notification.value = { show: true, message, type };
+const showNotification = (message, type = 'success', title = null) => {
+  notification.value = { show: true, message, type, title };
   setTimeout(() => {
     notification.value.show = false;
-  }, 3000);
+  }, 4000);
+};
+
+// Theme management - Initialize immediately
+const initializeTheme = () => {
+  const savedTheme = localStorage.getItem('theme');
+  
+  if (savedTheme) {
+    isDarkMode.value = savedTheme === 'dark';
+  } else {
+    isDarkMode.value = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  
+  applyTheme();
+};
+
+const applyTheme = () => {
+  const htmlElement = document.documentElement;
+  const bodyElement = document.body;
+  
+  // Remove both classes first to ensure clean state
+  htmlElement.classList.remove('dark', 'light');
+  bodyElement.classList.remove('dark', 'light');
+  
+  if (isDarkMode.value) {
+    htmlElement.classList.add('dark');
+    bodyElement.classList.add('dark');
+    htmlElement.setAttribute('data-theme', 'dark');
+  } else {
+    htmlElement.classList.add('light');
+    bodyElement.classList.add('light');
+    htmlElement.setAttribute('data-theme', 'light');
+  }
+  
+  // Set color scheme for better browser support
+  htmlElement.style.colorScheme = isDarkMode.value ? 'dark' : 'light';
+  
+  // Force immediate style recalculation
+  setTimeout(() => {
+    htmlElement.style.display = 'none';
+    htmlElement.offsetHeight; // Trigger reflow
+    htmlElement.style.display = '';
+  }, 0);
+};
+
+const toggleTheme = () => {
+  isDarkMode.value = !isDarkMode.value;
+  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
+  applyTheme();
+  showNotification(
+    `Tema ${isDarkMode.value ? 'oscuro' : 'claro'} activado`,
+    'success',
+    'Tema cambiado'
+  );
+};
+
+// Apply theme immediately when script loads - Enhanced for Tailwind v4
+(() => {
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const shouldBeDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+  
+  const htmlElement = document.documentElement;
+  const bodyElement = document.body;
+  
+  // Clean all theme classes
+  htmlElement.classList.remove('dark', 'light');
+  bodyElement.classList.remove('dark', 'light');
+  
+  if (shouldBeDark) {
+    htmlElement.classList.add('dark');
+    bodyElement.classList.add('dark');
+    htmlElement.style.colorScheme = 'dark';
+    htmlElement.setAttribute('data-theme', 'dark');
+  } else {
+    htmlElement.classList.add('light');
+    bodyElement.classList.add('light');
+    htmlElement.style.colorScheme = 'light';
+    htmlElement.setAttribute('data-theme', 'light');
+  }
+  
+  // Force immediate style recalculation
+  htmlElement.style.display = 'none';
+  htmlElement.offsetHeight; // Trigger reflow
+  htmlElement.style.display = '';
+})();
+
+// Responsive sidebar management
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
+};
+
+const handleModuleChange = (module) => {
+  activeModule.value = module;
+  // Close sidebar on mobile when module changes
+  if (window.innerWidth < 1024) {
+    sidebarOpen.value = false;
+  }
 };
 
 const checkAuth = async () => {
@@ -156,7 +299,17 @@ const fetchProducts = async () => {
     products.value = response.data;
   } catch (error) {
     console.error('Error fetching products:', error);
-    showNotification('Error al cargar los productos', 'error');
+  }
+};
+
+const fetchTransactions = async () => {
+  try {
+    const response = await axios.get('http://localhost:3000/api/transactions', {
+      withCredentials: true
+    });
+    transactions.value = response.data;
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
   }
 };
 
@@ -234,23 +387,28 @@ const handleProductDelete = async (productId) => {
 
 const handleCreateUser = async (userData) => {
   try {
-    // NOTE: In a real app, this would be an API call to a secure endpoint.
-    // For demonstration, we'll just log the data and show a success message.
-    console.log('Creating user:', userData);
-    // await axios.post('http://localhost:3000/api/users', userData, {
-    //     withCredentials: true
-    // });
+    await axios.post('http://localhost:3000/api/users', userData, {
+      withCredentials: true
+    });
     showNotification(`Usuario '${userData.username}' creado con éxito`);
   } catch (error) {
     console.error('Error creating user:', error);
-    const errorMessage = error.response?.data?.message || 'Error al crear el usuario';
+    const errorMessage = error.response?.data?.error || 'Error al crear el usuario';
     showNotification(errorMessage, 'error');
   }
 };
 
-onMounted(() => {
-  checkAuth();
-  fetchDashboardStats();
+onMounted(async () => {
+  // Initialize theme immediately before anything else
+  initializeTheme();
+  
+  await checkAuth();
+  if (isAuthenticated.value) {
+    await fetchProducts();
+    await fetchUsers();
+    await fetchDashboardStats();
+    await fetchTransactions();
+  }
 });
 
 watch(activeModule, (newModule) => {

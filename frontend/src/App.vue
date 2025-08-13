@@ -1,13 +1,26 @@
 <template>
-  <div id="app">
+  <div id="app" class="min-h-screen">
     <router-view />
   </div>
 </template>
 
-<script setup>
-// No script needed for this basic setup
+<script>
+export default {
+  name: 'App'
+}
 </script>
 
 <style>
-/* Puedes agregar estilos globales aquí si es necesario */
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure dark mode transitions work smoothly */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
 </style>

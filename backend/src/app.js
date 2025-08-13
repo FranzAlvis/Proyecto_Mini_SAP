@@ -591,6 +591,74 @@ app.post('/api/products/output', auth, async (req, res) => {
   }
 });
 
+// Get all transactions
+app.get('/api/transactions', auth, async (req, res) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        product: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true
+          }
+        }
+      }
+    });
+    res.json(transactions);
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ error: 'Error al obtener las transacciones' });
+  }
+});
+
+// Create user endpoint (for admin users only)
+app.post('/api/users', auth, isAdmin, async (req, res) => {
+  try {
+    const { username, password, name, role } = req.body;
+    
+    if (!username || !password || !name) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    }
+
+    // Check if username already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { username }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'El nombre de usuario ya existe' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+        name,
+        role: role?.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'USER'
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        createdAt: true
+      }
+    });
+    
+    res.status(201).json({ 
+      message: 'Usuario creado exitosamente',
+      user 
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Error al crear el usuario' });
+  }
+});
+
 app.listen(3000, () => {
   console.log('Servidor corriendo en el puerto 3000');
 });
